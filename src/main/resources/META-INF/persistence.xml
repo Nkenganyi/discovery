@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.1" xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
+  <persistence-unit name="za.co.discovery_discovery_jar_0.0.1-SNAPSHOTPU" transaction-type="RESOURCE_LOCAL">
+    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+    <class>za.co.discovery.entities.Currency</class>
+    <class>za.co.discovery.entities.Atm</class>
+    <class>za.co.discovery.entities.ClientType</class>
+    <class>za.co.discovery.entities.DenominationType</class>
+    <class>za.co.discovery.entities.CurrencyConversionRate</class>
+    <class>za.co.discovery.entities.CreditCardLimit</class>
+    <class>za.co.discovery.entities.ClientAccount</class>
+    <class>za.co.discovery.entities.Client</class>
+    <class>za.co.discovery.entities.AtmAllocation</class>
+    <class>za.co.discovery.entities.Denomination</class>
+    <class>za.co.discovery.entities.AccountType</class>
+    <class>za.co.discovery.entities.ClientSubType</class>
+    <properties>
+      <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/discovery?zeroDateTimeBehavior=convertToNull"/>
+      <property name="javax.persistence.jdbc.user" value="root"/>
+      <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+      <property name="javax.persistence.jdbc.password" value="pvi@2019"/>
+    </properties>
+  </persistence-unit>
+</persistence>
