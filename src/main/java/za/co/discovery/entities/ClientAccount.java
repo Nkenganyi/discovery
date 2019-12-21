@@ -23,6 +23,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+import org.springframework.stereotype.Service;
 
 /**
  *
@@ -38,6 +39,7 @@ import javax.xml.bind.annotation.XmlTransient;
     @NamedQuery(name = "ClientAccount.findByAccountTypeCode", query = "SELECT c FROM ClientAccount c WHERE c.accountTypeCode = :accountTypeCode"),
     @NamedQuery(name = "ClientAccount.findByCurrencyCode", query = "SELECT c FROM ClientAccount c WHERE c.currencyCode = :currencyCode"),
     @NamedQuery(name = "ClientAccount.findByDisplayBalance", query = "SELECT c FROM ClientAccount c WHERE c.displayBalance = :displayBalance")})
+@Service
 public class ClientAccount implements Serializable {
     private static final long serialVersionUID = 1L;
     @Id
