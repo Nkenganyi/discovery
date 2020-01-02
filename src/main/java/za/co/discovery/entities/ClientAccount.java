@@ -7,11 +7,14 @@ package za.co.discovery.entities;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -66,6 +69,8 @@ public class ClientAccount implements Serializable {
     private BigDecimal displayBalance;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "clientAccountNumber")
     private Collection<CreditCardLimit> creditCardLimitCollection;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<Transactions> transactions = new ArrayList<>();
 
     public ClientAccount() {
     }
@@ -129,6 +134,16 @@ public class ClientAccount implements Serializable {
     public void setCreditCardLimitCollection(Collection<CreditCardLimit> creditCardLimitCollection) {
         this.creditCardLimitCollection = creditCardLimitCollection;
     }
+
+    public List<Transactions> getTransactions() {
+        return transactions;
+    }
+
+    public void setTransactions(List<Transactions> transactions) {
+        this.transactions = transactions;
+    }
+    
+    
 
     @Override
     public int hashCode() {

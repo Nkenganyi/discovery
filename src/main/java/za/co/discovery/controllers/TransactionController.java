@@ -6,18 +6,26 @@
 package za.co.discovery.controllers;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.co.discovery.entities.Client;
 import za.co.discovery.entities.ClientAccount;
 import za.co.discovery.entities.CreditCardLimit;
+import za.co.discovery.entities.CurrencyConversionRate;
+import za.co.discovery.entities.Transactions;
 
 /**
  *
@@ -29,63 +37,223 @@ public class TransactionController {
 
     @Autowired
     private ClientAccount clientAccount;
-    
-    private BigDecimal amount;
-    private long clientAccountNumber;
-
-    public TransactionController(BigDecimal amount, long clientAccountNumber) {
-        this.amount = amount;
-        this.clientAccountNumber = clientAccountNumber;
-    }
-
-    public TransactionController() {
-    }
-    
-    
+    @Autowired
+    private Transactions transaction;
+    @Autowired
+    private Client client;
+    @Autowired
+    private CurrencyConversionRate currencyConversionRate;
+    CreditCardLimit creditCardLimit;
     public String message;
-    
+
     String jpaName = "za.co.discovery_discovery_jar_0.0.1-SNAPSHOTPU";
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory(jpaName);
-    EntityManager em = emf.createEntityManager();
+    EntityManagerFactory emf;
+    EntityManager em;
 
     @PostMapping("/withdraw")
-    public String withdrawal(@RequestBody TransactionController tc) {
+    public String withdrawals(@RequestBody Transactions transaction) {
 
-        try {
-            em.getTransaction().begin();
-            List<ClientAccount> accounts = (List<ClientAccount>) em.createQuery("SELECT ca FROM ClientAccount ca");
-            double withdrawAmount = 0.0;
-            for (int a = 0; a < accounts.size(); a++) {
-                
-                if (tc.clientAccountNumber == clientAccount.getClientAccountNumber()) {
-                    clientAccount = accounts.get(a);
-                    withdrawAmount = clientAccount.getDisplayBalance().doubleValue() - tc.amount.doubleValue();
-                    if (clientAccount.getAccountTypeCode().equalsIgnoreCase("CHQ")) {
-                        
-                        clientAccount.setDisplayBalance((BigDecimal.valueOf(withdrawAmount)));
-                        
-                    } else if (clientAccount.getAccountTypeCode().equalsIgnoreCase("CCRD")
-                            || clientAccount.getAccountTypeCode().equalsIgnoreCase("SVGS")) {
-                        
-                        CreditCardLimit ccl = em.find(CreditCardLimit.class, tc.clientAccountNumber);
-                        
-                        if (withdrawAmount <= ccl.getAccountLimit().doubleValue()) {
+        emf = Persistence.createEntityManagerFactory(jpaName);
+        em = emf.createEntityManager();
+        em.getTransaction().begin();
 
-                             clientAccount.setDisplayBalance((BigDecimal.valueOf(withdrawAmount)));
-                            message = "succesful";
-                        }
+        // Checking If the Amount is Valid
+        if (transaction.getAmount() % 2 != 0) {
+            return "Invalid Amount Coins Not Allowed!!!";
+        } else {
+            clientAccount = em.find(ClientAccount.class, transaction.getAccountNumber());
+
+            // checking if the Account Number Exist
+            if (clientAccount != null) {
+
+                List<CreditCardLimit> limits = em.createQuery("SELECT ccl FROM CreditCardLimit ccl").getResultList();
+                for (CreditCardLimit limit : limits) {
+                    if (limit.getClientAccountNumber().getClientAccountNumber() == transaction.getAccountNumber()) {
+                        this.creditCardLimit = limit;
                     }
                 }
 
-            }
-            em.persist(this.clientAccount);
-            
-            em.getTransaction().commit();
+                // checking for the different Cards
+                if (clientAccount.getAccountTypeCode().equalsIgnoreCase("CCRD")) {
 
-        } catch (Exception ex) {
-          em.getTransaction().rollback();
-        }
-        return message;
+                    //TO the the Account Number to Get The Account Limit
+                    if (transaction.getAmount() > creditCardLimit.getAccountLimit().doubleValue()) {
+
+                        // MESSAGE  = "Exit Limit Try a Lesser Amount";   CCRD
+                        return "Exit Limit Try a Lesser Amount";
+                    } else {
+                        try {
+                            double balance = clientAccount.getDisplayBalance().doubleValue() - transaction.getAmount();
+
+                            clientAccount.setDisplayBalance(BigDecimal.valueOf(balance));
+
+                            this.transaction = transaction;
+
+                            em.persist(clientAccount);
+                            em.persist(this.transaction);
+
+                            em.getTransaction().commit();
+
+                            System.err.println("Successfull");
+
+                            return "Done!!!!!!!!!!!!!";
+
+                        } catch (Exception e) {
+                            em.getTransaction().rollback();
+                        }
+                    }
+
+                } else if (clientAccount.getAccountTypeCode().equalsIgnoreCase("CHQ")) {
+
+                    try {
+                        if (transaction.getAmount() > 10000) {
+
+                            return "Insufficient Fund";
+
+                        } else {
+
+                            double balance = clientAccount.getDisplayBalance().doubleValue() + (-transaction.getAmount());
+
+                            clientAccount.setDisplayBalance(BigDecimal.valueOf(balance));
+
+                            this.transaction = transaction;
+
+                            em.persist(clientAccount);
+                            em.persist(this.transaction);
+
+                            em.getTransaction().commit();
+
+                            System.err.println("Successfull");
+
+                            return clientAccount.toString();  // to See the Changes
+
+                        }
+                    } catch (Exception e) {
+                        em.getTransaction().rollback();
+                    }
+                } else if (clientAccount.getAccountTypeCode().equalsIgnoreCase("SVGS")) {
+
+                    if (clientAccount.getDisplayBalance().doubleValue() < transaction.getAmount()) {
+
+                        return "Insufficient Fund";
+
+                    } else {
+
+                        double balance = clientAccount.getDisplayBalance().doubleValue() - transaction.getAmount();
+
+                        clientAccount.setDisplayBalance(BigDecimal.valueOf(balance));
+
+                        this.transaction = transaction;
+
+                        em.persist(this.clientAccount);
+                        em.persist(this.transaction);
+
+                        em.getTransaction().commit();
+
+                        System.err.println("Successfull");
+                        return "DOne!!!!!!!!!!!!!";
+                    }
+                }
+
+            } else {
+                return "Account Number does't Exist";
+            }
+
+        }// End Of If Statement To Check Valid Amount
+
+        return null;
+
     }
 
+    @PostMapping("/display")
+    public List<ClientAccount> displayAccounts(@RequestHeader long idNumber) {
+        emf = Persistence.createEntityManagerFactory(jpaName);
+        em = emf.createEntityManager();
+        em.getTransaction().begin();
+        List<ClientAccount> customerAccounts = new ArrayList<>();
+        List<ClientAccount> accounts = (List<ClientAccount>) em.createQuery("SELECT ca FROM ClientAccount ca").getResultList();
+        for (ClientAccount ca : accounts) {
+            if (ca.getClientId() == idNumber) {
+                customerAccounts.add(ca);
+            }
+        }
+          customerAccounts.sort((ca1, ca2) -> ca2.getDisplayBalance().compareTo(ca1.getDisplayBalance()));
+          
+        return customerAccounts;
+    }
+
+    
+    @PostMapping("highestAccountBalancePerClient")
+    public ClientAccount highestAccountBalancePerCLient(@RequestHeader long idNumber) {
+
+        emf = Persistence.createEntityManagerFactory(jpaName);
+        em = emf.createEntityManager();
+        em.getTransaction().begin();
+
+        List<ClientAccount> clientAccounts = em.createQuery("SELECT ca FROM ClientAccount ca").getResultList();
+
+        List<ClientAccount> allClientAccounts = clientAccounts.stream().filter((account)
+                -> account.getClientId() == idNumber).collect(Collectors.toList());
+
+        allClientAccounts.sort((ca1, ca2) -> ca2.getDisplayBalance().compareTo(ca1.getDisplayBalance()));
+        
+        clientAccount = allClientAccounts.get(0);
+        
+        return clientAccount;
+    }
+
+    
+    @PostMapping("balanceInRandValue")
+    public String balanceInRandValue(@RequestHeader long clientAccountNumber) {
+        emf = Persistence.createEntityManagerFactory(jpaName);
+        em = emf.createEntityManager();
+        em.getTransaction().begin();
+
+        List<BigDecimal> rate = new ArrayList<>();
+        List<ClientAccount>clientAccounts = new ArrayList<>();
+
+        clientAccount = em.find(ClientAccount.class, clientAccountNumber);
+
+        if (this.clientAccount == null) {
+           
+            message = "No Accounts to Display ";
+
+        } else {
+            clientAccounts = em.createQuery("SELECT ca FROM ClientAccount ca WHERE ca.clientId ="
+                    + this.clientAccount.getClientId()).getResultList();
+
+            for (int a = 0; a < clientAccounts.size(); a++) {
+
+                currencyConversionRate = em.find(CurrencyConversionRate.class,
+                        clientAccounts.get(a).getCurrencyCode());
+
+                BigDecimal balance;
+
+                if (currencyConversionRate.getConversionIndicator().equalsIgnoreCase("*")) {
+
+                    balance = BigDecimal.valueOf(clientAccounts.get(a).getDisplayBalance().doubleValue()
+                            * currencyConversionRate.getRate().doubleValue());
+
+                    clientAccounts.get(a).setDisplayBalance(balance);
+
+                } else if (currencyConversionRate.getConversionIndicator().equalsIgnoreCase("/")) {
+
+                    balance = BigDecimal.valueOf(clientAccounts.get(a).getDisplayBalance().doubleValue()
+                            / currencyConversionRate.getRate().doubleValue());
+
+                    clientAccounts.get(a).setDisplayBalance(balance);
+                }
+
+            }// end of Loop
+
+            for (ClientAccount cl : clientAccounts) {
+                //Finding the Conversion Rate For a Particular ClientAccount
+                currencyConversionRate = em.find(CurrencyConversionRate.class, cl.getCurrencyCode());
+
+                rate.add(currencyConversionRate.getRate());
+            }
+        }
+
+        return rate + " : " + " \n";
+    }
 }
