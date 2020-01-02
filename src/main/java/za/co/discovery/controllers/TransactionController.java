@@ -256,4 +256,43 @@ public class TransactionController {
 
         return rate + " : " + " \n";
     }
+    
+    @PostMapping("financialPositionPerClient")
+    public List<String> financialPositionPerClient() {
+        emf = Persistence.createEntityManagerFactory(jpaName);
+        em = emf.createEntityManager();
+        em.getTransaction().begin();
+
+        List<String> listOfFinancialPositionPerClient = new ArrayList<>();
+        double aggregateLoan = 0;
+        double aggregateBalance = 0;
+        double totalAggregate = 0;
+
+       List<Client>clientList = em.createQuery("SELECT c FROM Client c").getResultList();
+        
+        for (int a = 0; a < clientList.size(); a++) {
+            aggregateLoan = 0;
+            aggregateBalance = 0;
+           List<ClientAccount> clientAccounts = em.createQuery("SELECT a FROM ClientAccount a where a.clientId =" + clientList.get(a).getClientId()).getResultList();
+         
+            for (int b = 0; b < clientAccounts.size(); b++) {
+             
+                if (clientAccounts.get(b).getDisplayBalance().doubleValue() <= 0) {
+                    aggregateLoan = aggregateLoan + clientAccounts.get(b).getDisplayBalance().doubleValue();
+                } else {
+                    aggregateBalance = aggregateBalance + clientAccounts.get(b).getDisplayBalance().doubleValue();
+                }
+
+            }
+            totalAggregate = aggregateBalance + aggregateLoan;
+
+            listOfFinancialPositionPerClient.add(clientList.get(a).getClientId() + " : " 
+                    + clientList.get(a).getTitle() + " ; " + " : " + clientList.get(a).getName() 
+                    + " : " + clientList.get(a).getSurname()+ " : " + aggregateBalance +
+                    " : " + aggregateLoan + " : " + totalAggregate);
+           
+        }
+      
+        return listOfFinancialPositionPerClient;
+    }
 }
