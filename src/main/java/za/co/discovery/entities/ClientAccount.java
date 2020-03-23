@@ -21,6 +21,7 @@ import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -71,6 +72,8 @@ public class ClientAccount implements Serializable {
     private Collection<CreditCardLimit> creditCardLimitCollection;
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Transactions> transactions = new ArrayList<>();
+    
+    
 
     public ClientAccount() {
     }
@@ -142,6 +145,8 @@ public class ClientAccount implements Serializable {
     public void setTransactions(List<Transactions> transactions) {
         this.transactions = transactions;
     }
+
+   
     
     
 

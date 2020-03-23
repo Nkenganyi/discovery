@@ -26,6 +26,7 @@ public class Transactions implements Serializable {
     private String transactionType;
     private double amount;
     private Long accountNumber;
+    private int atmId;
 
     public Transactions() {
     }
@@ -67,6 +68,14 @@ public class Transactions implements Serializable {
 
     public void setAccountNumber(long accountNumber) {
         this.accountNumber = accountNumber;
+    }
+
+    public int getAtmId() {
+        return atmId;
+    }
+
+    public void setAtmId(int atmId) {
+        this.atmId = atmId;
     }
 
     @Override
